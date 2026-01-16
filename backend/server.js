@@ -9,6 +9,35 @@ const session = require('express-session');
 
 dotenv.config();
 
+// Helper function to encode MongoDB URI password
+function encodeMongoURI(uri) {
+  if (!uri || uri === 'mongodb://localhost:27017/pushnotifications') {
+    return uri;
+  }
+  
+  try {
+    // Parse the URI to extract and encode the password
+    const url = new URL(uri);
+    if (url.password) {
+      // Encode the password
+      const encodedPassword = encodeURIComponent(url.password);
+      // Reconstruct the URI with encoded password
+      return uri.replace(`:${url.password}@`, `:${encodedPassword}@`);
+    }
+    return uri;
+  } catch (error) {
+    // If URL parsing fails, try a regex approach for MongoDB connection strings
+    // Match pattern: mongodb://username:password@host or mongodb+srv://username:password@host
+    const match = uri.match(/^(mongodb\+srv?:\/\/)([^:]+):([^@]+)@(.+)$/);
+    if (match) {
+      const [, protocol, username, password, rest] = match;
+      const encodedPassword = encodeURIComponent(password);
+      return `${protocol}${username}:${encodedPassword}@${rest}`;
+    }
+    return uri;
+  }
+}
+
 const app = express();
 
 // Security middleware
@@ -39,7 +68,8 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pushnotifications', {
+const mongoURI = encodeMongoURI(process.env.MONGODB_URI || 'mongodb://localhost:27017/pushnotifications');
+mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
