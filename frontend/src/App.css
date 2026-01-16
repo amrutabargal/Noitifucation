@@ -1,0 +1,53 @@
+/* Additional global styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f9fafb !important;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f9fafb;
+  display: block;
+}
+
+/* Ensure no black screens */
+body {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f9fafb;
+  width: 100%;
+}
+
+/* Ensure proper container widths */
+.container {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Fix for sidebar layout */
+@media (min-width: 1024px) {
+  .lg\:ml-64 {
+    margin-left: 16rem;
+  }
+}
+
