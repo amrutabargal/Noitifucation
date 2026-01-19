@@ -4,15 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const Login = () => {
-  const { login: googleLogin, user, loginWithEmail, registerWithEmail, fetchUser } = useAuth();
-  const [isEmailLogin, setIsEmailLogin] = useState(false);
+  const { login: googleLogin, user, loginWithEmail, registerWithEmail } = useAuth();
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -26,124 +26,149 @@ const Login = () => {
     return emailRegex.test(email);
   };
 
-  const handleSubmit = async (e) => {
+  const handleGoogleLogin = () => {
+    try {
+      googleLogin();
+    } catch (error) {
+      toast.error('Google login failed. Please try again.');
+    }
+  };
+
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (isRegister) {
-        // Register validation
-        if (!formData.name.trim()) {
-          toast.error('Please enter your full name');
-          setLoading(false);
-          return;
-        }
+      // Login validation
+      if (!formData.email.trim()) {
+        toast.error('Please enter your email');
+        setLoading(false);
+        return;
+      }
 
-        if (formData.name.trim().length < 2) {
-          toast.error('Name must be at least 2 characters');
-          setLoading(false);
-          return;
-        }
+      if (!validateEmail(formData.email.trim())) {
+        toast.error('Please enter a valid email address');
+        setLoading(false);
+        return;
+      }
 
-        if (!formData.email.trim()) {
-          toast.error('Please enter your email');
-          setLoading(false);
-          return;
-        }
+      if (!formData.password) {
+        toast.error('Please enter your password');
+        setLoading(false);
+        return;
+      }
 
-        if (!validateEmail(formData.email.trim())) {
-          toast.error('Please enter a valid email address');
-          setLoading(false);
-          return;
-        }
+      const result = await loginWithEmail(
+        formData.email.trim(),
+        formData.password
+      );
 
-        if (!formData.password) {
-          toast.error('Please enter a password');
-          setLoading(false);
-          return;
-        }
-
-        if (formData.password.length < 6) {
-          toast.error('Password must be at least 6 characters');
-          setLoading(false);
-          return;
-        }
-
-        if (formData.password !== formData.confirmPassword) {
-          toast.error('Passwords do not match');
-          setLoading(false);
-          return;
-        }
-
-        const result = await registerWithEmail(
-          formData.name.trim(),
-          formData.email.trim(),
-          formData.password
-        );
-
-        if (result.success) {
-          toast.success('Registration successful! Welcome!');
-          // Reset form
-          setFormData({
-            name: '',
-            email: '',
-            password: '',
-            confirmPassword: ''
-          });
-          setIsRegister(false);
-          // Small delay to show success message, then redirect
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 500);
-        } else {
-          toast.error(result.error || 'Registration failed');
-          setLoading(false);
-        }
+      if (result.success) {
+        toast.success('Login successful! Welcome back!');
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
       } else {
-        // Login validation
-        if (!formData.email.trim()) {
-          toast.error('Please enter your email');
-          setLoading(false);
-          return;
-        }
-
-        if (!validateEmail(formData.email.trim())) {
-          toast.error('Please enter a valid email address');
-          setLoading(false);
-          return;
-        }
-
-        if (!formData.password) {
-          toast.error('Please enter your password');
-          setLoading(false);
-          return;
-        }
-
-        const result = await loginWithEmail(
-          formData.email.trim(),
-          formData.password
-        );
-
-        if (result.success) {
-          toast.success('Login successful! Welcome back!');
-          // Reset form
-          setFormData({
-            name: '',
-            email: '',
-            password: '',
-            confirmPassword: ''
-          });
-          // Small delay to show success message, then redirect
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 500);
+        // Check if user doesn't exist, show register option
+        const errorMsg = result.error?.toLowerCase() || '';
+        if (errorMsg.includes('not found') || 
+            errorMsg.includes('does not exist') ||
+            errorMsg.includes('user not found') ||
+            errorMsg.includes('invalid email') ||
+            errorMsg.includes('no account')) {
+          toast.error('Account not found. Please create an account.');
+          setShowRegister(true);
+          setShowEmailForm(false);
+          // Keep email in form for registration
         } else {
           toast.error(result.error || 'Login failed');
-          setLoading(false);
         }
+        setLoading(false);
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || error.message || 'Authentication failed');
+      toast.error(error.response?.data?.error || error.message || 'Login failed');
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Register validation
+      if (!formData.name.trim()) {
+        toast.error('Please enter your full name');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.name.trim().length < 2) {
+        toast.error('Name must be at least 2 characters');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.email.trim()) {
+        toast.error('Please enter your email');
+        setLoading(false);
+        return;
+      }
+
+      if (!validateEmail(formData.email.trim())) {
+        toast.error('Please enter a valid email address');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.password) {
+        toast.error('Please enter a password');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.password.length < 6) {
+        toast.error('Password must be at least 6 characters');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        toast.error('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+
+      const result = await registerWithEmail(
+        formData.name.trim(),
+        formData.email.trim(),
+        formData.password
+      );
+
+      if (result.success) {
+        toast.success('Registration successful! Welcome!');
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+        setShowRegister(false);
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
+      } else {
+        toast.error(result.error || 'Registration failed');
+        setLoading(false);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || error.message || 'Registration failed');
       setLoading(false);
     }
   };
@@ -558,58 +583,22 @@ const Login = () => {
           </motion.p>
         </motion.div>
 
-        {/* Toggle Buttons */}
-        <div className="flex gap-2 mb-6 bg-dark-800/50 p-1 rounded-xl border border-dark-700/50">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsEmailLogin(false)}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-              !isEmailLogin
-                ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            Google Login
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsEmailLogin(true)}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-              isEmailLogin
-                ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            Email Login
-          </motion.button>
-        </div>
-
+        {/* Direct Google Login Button */}
         <AnimatePresence mode="wait">
-          {!isEmailLogin ? (
+          {!showEmailForm && !showRegister ? (
             <motion.div
               key="google"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
+              className="space-y-4"
             >
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-                  // Check if Google OAuth is configured
-                  fetch(`${API_URL}/auth/google`, { method: 'HEAD' })
-                    .then(() => {
-                      googleLogin();
-                    })
-                    .catch(() => {
-                      toast.error('Google OAuth is not configured. Please use Email Login or configure Google OAuth in backend/.env');
-                    });
-                }}
-                className="w-full bg-dark-800/50 border-2 border-dark-700 text-gray-200 font-semibold py-4 px-6 rounded-xl hover:bg-dark-800 hover:border-royal-500/50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                onClick={handleGoogleLogin}
+                className="w-full bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-700 font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 <svg className="w-6 h-6" viewBox="0 0 24 24">
                   <path
@@ -631,58 +620,64 @@ const Login = () => {
                 </svg>
                 Continue with Google
               </motion.button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-dark-700"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-transparent text-gray-400">OR</span>
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowEmailForm(true)}
+                className="w-full btn-secondary"
+              >
+                Continue with Email
+              </motion.button>
             </motion.div>
-          ) : (
+          ) : showRegister ? (
             <motion.div
-              key="email"
+              key="register"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
+              className="space-y-4"
             >
-              <div className="flex gap-2 mb-4 bg-dark-800/50 p-1 rounded-xl border border-dark-700/50">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-200">Create Account</h2>
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsRegister(false)}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                    !isRegister
-                      ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    setShowRegister(false);
+                    setShowEmailForm(true);
+                    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+                  }}
+                  className="text-gray-400 hover:text-gray-300 text-sm"
                 >
-                  Login
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsRegister(true)}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                    isRegister
-                      ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  Register
+                  Back to Login
                 </motion.button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {isRegister && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="input-field"
-                      placeholder="John Doe"
-                    />
-                  </div>
-                )}
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="input-field"
+                    placeholder="John Doe"
+                  />
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -713,22 +708,20 @@ const Login = () => {
                   />
                 </div>
 
-                {isRegister && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Confirm Password
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      className="input-field"
-                      placeholder="••••••••"
-                      minLength={6}
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="input-field"
+                    placeholder="••••••••"
+                    minLength={6}
+                  />
+                </div>
 
                 <motion.button
                   type="submit"
@@ -744,9 +737,82 @@ const Login = () => {
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
                       />
-                      Please wait...
+                      Creating Account...
                     </span>
-                  ) : isRegister ? 'Create Account' : 'Login'}
+                  ) : 'Create Account'}
+                </motion.button>
+              </form>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="email-login"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-200">Login with Email</h2>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    setShowEmailForm(false);
+                    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+                  }}
+                  className="text-gray-400 hover:text-gray-300 text-sm"
+                >
+                  Back
+                </motion.button>
+              </div>
+
+              <form onSubmit={handleEmailLogin} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="input-field"
+                    placeholder="your@email.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="input-field"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <motion.button
+                  type="submit"
+                  disabled={loading}
+                  whileHover={{ scale: loading ? 1 : 1.02 }}
+                  whileTap={{ scale: loading ? 1 : 0.98 }}
+                  className="w-full btn-primary"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                      />
+                      Logging in...
+                    </span>
+                  ) : 'Login'}
                 </motion.button>
               </form>
             </motion.div>
