@@ -21,7 +21,7 @@ const Layout = ({ children }) => {
   }, []);
 
   const menuItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
+    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/projects', label: 'Projects', icon: '📁' },
     { path: '/notifications', label: 'Notifications', icon: '🔔' },
     { path: '/analytics', label: 'Analytics', icon: '📈' },
@@ -51,7 +51,7 @@ const Layout = ({ children }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </motion.button>
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/dashboard" className="flex items-center gap-2 group">
               <motion.div 
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.6 }}
