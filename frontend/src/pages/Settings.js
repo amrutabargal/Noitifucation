@@ -31,7 +31,8 @@ const Settings = () => {
       <motion.h1
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="text-3xl font-bold text-gray-900"
+        transition={{ duration: 0.5 }}
+        className="text-4xl font-bold gradient-text"
       >
         Settings
       </motion.h1>
@@ -40,14 +41,15 @@ const Settings = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Settings */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring" }}
             className="card"
           >
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Profile Settings</h2>
+            <h2 className="text-xl font-bold text-gray-200 mb-6">Profile Settings</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Name
                 </label>
                 <input
@@ -58,25 +60,25 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Email
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   disabled
-                  className="input-field bg-gray-100"
+                  className="input-field bg-dark-900/50"
                 />
                 <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Role
                 </label>
                 <select
                   value={formData.role}
                   disabled
-                  className="input-field bg-gray-100"
+                  className="input-field bg-dark-900/50"
                 >
                   <option value="viewer">Viewer</option>
                   <option value="editor">Editor</option>
@@ -91,54 +93,64 @@ const Settings = () => {
 
           {/* Account Info */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.1, type: "spring" }}
             className="card"
           >
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Account Information</h2>
+            <h2 className="text-xl font-bold text-gray-200 mb-6">Account Information</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <motion.div
+                whileHover={{ scale: 1.02, x: 5 }}
+                className="flex items-center justify-between p-4 bg-dark-800/50 rounded-xl border border-dark-700/50"
+              >
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Member Since</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm font-medium text-gray-300">Member Since</p>
+                  <p className="text-sm text-gray-400">
                     {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.02, x: 5 }}
+                className="flex items-center justify-between p-4 bg-dark-800/50 rounded-xl border border-dark-700/50"
+              >
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Last Login</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm font-medium text-gray-300">Last Login</p>
+                  <p className="text-sm text-gray-400">
                     {user?.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>
 
         {/* Profile Picture */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.2, type: "spring" }}
           className="card"
         >
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Profile Picture</h2>
+          <h2 className="text-xl font-bold text-gray-200 mb-6">Profile Picture</h2>
           <div className="flex flex-col items-center">
             {user?.picture ? (
-              <img
+              <motion.img
+                whileHover={{ scale: 1.1, rotate: 5 }}
                 src={user.picture}
                 alt={user.name}
-                className="w-32 h-32 rounded-full border-4 border-royal-200 mb-4"
+                className="w-32 h-32 rounded-full border-4 border-royal-500/50 mb-4 shadow-lg shadow-royal-500/30"
               />
             ) : (
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-royal-500 to-royal-600 flex items-center justify-center text-white text-4xl font-bold mb-4">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="w-32 h-32 rounded-full bg-gradient-to-br from-royal-500 to-royal-600 flex items-center justify-center text-white text-4xl font-bold mb-4 shadow-lg shadow-royal-500/30"
+              >
                 {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </div>
+              </motion.div>
             )}
-            <p className="text-sm text-gray-600 text-center">
+            <p className="text-sm text-gray-400 text-center">
               Profile picture is managed by Google
             </p>
           </div>

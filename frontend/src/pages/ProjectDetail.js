@@ -48,48 +48,55 @@ const ProjectDetail = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-royal-600"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-dark-700 border-t-royal-500 rounded-full"
+        />
       </div>
     );
   }
 
   if (!project) {
-    return <div>Project not found</div>;
+    return <div className="text-gray-400">Project not found</div>;
   }
 
   return (
     <div className="space-y-6 w-full max-w-full">
       <div className="flex items-center justify-between">
         <div>
-          <Link to="/projects" className="text-royal-600 hover:text-royal-700 mb-2 inline-block">
+          <Link to="/projects" className="text-royal-400 hover:text-royal-300 mb-2 inline-block transition-colors">
             ← Back to Projects
           </Link>
           <motion.h1
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-3xl font-bold text-gray-900"
+            transition={{ duration: 0.5 }}
+            className="text-4xl font-bold gradient-text"
           >
             {project.name}
           </motion.h1>
-          <p className="text-gray-600 mt-1">{project.domain}</p>
+          <p className="text-gray-400 mt-1">{project.domain}</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-dark-700">
         <nav className="flex space-x-8">
           {['overview', 'subscribers', 'notifications', 'integration'].map((tab) => (
-            <button
+            <motion.button
               key={tab}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(tab)}
               className={`py-4 px-1 border-b-2 font-medium text-sm capitalize transition-colors ${
                 activeTab === tab
-                  ? 'border-royal-600 text-royal-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-royal-500 text-royal-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-600'
               }`}
             >
               {tab}
-            </button>
+            </motion.button>
           ))}
         </nav>
       </div>
@@ -104,53 +111,69 @@ const ProjectDetail = () => {
           {/* Stats */}
           {stats && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="card">
-                <p className="text-gray-600 text-sm mb-2">Total Subscribers</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-              </div>
-              <div className="card">
-                <p className="text-gray-600 text-sm mb-2">Active</p>
-                <p className="text-3xl font-bold text-green-600">{stats.active}</p>
-              </div>
-              <div className="card">
-                <p className="text-gray-600 text-sm mb-2">Inactive</p>
-                <p className="text-3xl font-bold text-gray-400">{stats.inactive}</p>
-              </div>
-              <div className="card">
-                <p className="text-gray-600 text-sm mb-2">Campaigns</p>
-                <p className="text-3xl font-bold text-gray-900">{notifications.length}</p>
-              </div>
+              <motion.div
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="card"
+              >
+                <p className="text-gray-400 text-sm mb-2">Total Subscribers</p>
+                <p className="text-3xl font-bold gradient-text">{stats.total}</p>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="card"
+              >
+                <p className="text-gray-400 text-sm mb-2">Active</p>
+                <p className="text-3xl font-bold text-emerald-400">{stats.active}</p>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="card"
+              >
+                <p className="text-gray-400 text-sm mb-2">Inactive</p>
+                <p className="text-3xl font-bold text-gray-500">{stats.inactive}</p>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="card"
+              >
+                <p className="text-gray-400 text-sm mb-2">Campaigns</p>
+                <p className="text-3xl font-bold text-royal-400">{notifications.length}</p>
+              </motion.div>
             </div>
           )}
 
           {/* Recent Notifications */}
           <div className="card">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Recent Notifications</h2>
-              <Link to={`/notifications?project=${id}`} className="text-royal-600 hover:text-royal-700 font-medium">
+              <h2 className="text-xl font-bold text-gray-200">Recent Notifications</h2>
+              <Link to={`/notifications?project=${id}`} className="text-royal-400 hover:text-royal-300 font-medium transition-colors">
                 View All →
               </Link>
             </div>
             {notifications.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No notifications yet</p>
+              <p className="text-gray-400 text-center py-8">No notifications yet</p>
             ) : (
               <div className="space-y-4">
                 {notifications.slice(0, 5).map((notif) => (
-                  <div key={notif._id} className="p-4 bg-gray-50 rounded-lg">
+                  <motion.div
+                    key={notif._id}
+                    whileHover={{ x: 5 }}
+                    className="p-4 bg-dark-800/50 rounded-xl border border-dark-700/50 hover:border-royal-500/30 transition-all"
+                  >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{notif.title}</h3>
-                        <p className="text-sm text-gray-600">{notif.message}</p>
+                        <h3 className="font-semibold text-gray-200">{notif.title}</h3>
+                        <p className="text-sm text-gray-400">{notif.message}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        notif.status === 'sent' ? 'bg-green-100 text-green-700' :
-                        notif.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
+                        notif.status === 'sent' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                        notif.status === 'scheduled' ? 'bg-royal-500/20 text-royal-400 border border-royal-500/30' :
+                        'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                       }`}>
                         {notif.status}
                       </span>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}

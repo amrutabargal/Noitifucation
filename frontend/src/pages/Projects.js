@@ -57,7 +57,11 @@ const Projects = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-royal-600"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-dark-700 border-t-royal-500 rounded-full"
+        />
       </div>
     );
   }
@@ -68,13 +72,16 @@ const Projects = () => {
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold text-gray-900"
+          transition={{ duration: 0.5 }}
+          className="text-4xl font-bold gradient-text"
         >
           Projects
         </motion.h1>
-        <button onClick={() => setShowModal(true)} className="btn-primary">
-          + New Project
-        </button>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <button onClick={() => setShowModal(true)} className="btn-primary">
+            + New Project
+          </button>
+        </motion.div>
       </div>
 
       {projects.length === 0 ? (
@@ -83,9 +90,15 @@ const Projects = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="card text-center py-12"
         >
-          <div className="text-6xl mb-4">📁</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No projects yet</h3>
-          <p className="text-gray-600 mb-6">Create your first project to get started</p>
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-6xl mb-4"
+          >
+            📁
+          </motion.div>
+          <h3 className="text-xl font-semibold text-gray-200 mb-2">No projects yet</h3>
+          <p className="text-gray-400 mb-6">Create your first project to get started</p>
           <button onClick={() => setShowModal(true)} className="btn-primary">
             Create Project
           </button>
@@ -95,40 +108,55 @@ const Projects = () => {
           {projects.map((project, index) => (
             <motion.div
               key={project._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="card group hover:scale-105"
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ 
+                delay: index * 0.1,
+                type: "spring",
+                stiffness: 100
+              }}
+              whileHover={{ 
+                scale: 1.05,
+                y: -5,
+                transition: { duration: 0.2 }
+              }}
+              className="card group"
             >
               <Link to={`/projects/${project._id}`} className="block mb-4">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-royal-500 to-royal-600 rounded-lg flex items-center justify-center text-white text-xl font-bold">
+                  <motion.div
+                    whileHover={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                    className="w-14 h-14 bg-gradient-to-br from-royal-500 to-royal-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-royal-500/30"
+                  >
                     {project.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="px-3 py-1 bg-royal-100 text-royal-600 text-xs font-semibold rounded-full">
+                  </motion.div>
+                  <span className="px-3 py-1 bg-royal-500/20 text-royal-400 text-xs font-semibold rounded-full border border-royal-500/30">
                     {project.platform}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{project.name}</h3>
-                <p className="text-sm text-gray-600 mb-4">{project.domain}</p>
+                <h3 className="text-xl font-bold text-gray-200 mb-2 group-hover:text-royal-400 transition-colors">{project.name}</h3>
+                <p className="text-sm text-gray-400 mb-4">{project.domain}</p>
                 <div className="flex items-center justify-between text-sm">
                   <div>
-                    <p className="font-semibold text-gray-900">{project.subscribers?.length || 0}</p>
+                    <p className="font-semibold text-gray-200">{project.subscribers?.length || 0}</p>
                     <p className="text-gray-500">Subscribers</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{project.notifications?.length || 0}</p>
+                    <p className="font-semibold text-gray-200">{project.notifications?.length || 0}</p>
                     <p className="text-gray-500">Campaigns</p>
                   </div>
                 </div>
               </Link>
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <button
+              <div className="mt-4 pt-4 border-t border-dark-700">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => handleDelete(project._id)}
-                  className="text-red-600 hover:text-red-700 text-sm font-medium"
+                  className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
                 >
                   Delete
-                </button>
+                </motion.button>
               </div>
             </motion.div>
           ))}
@@ -138,17 +166,24 @@ const Projects = () => {
       {/* Create Project Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowModal(false)}
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass rounded-2xl shadow-2xl p-6 max-w-md w-full border border-dark-700/50"
             >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Project</h2>
+              <h2 className="text-2xl font-bold text-gray-200 mb-6">Create New Project</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Project Name
                   </label>
                   <input
@@ -161,7 +196,7 @@ const Projects = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Domain
                   </label>
                   <input
@@ -174,7 +209,7 @@ const Projects = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Platform
                   </label>
                   <select
@@ -202,7 +237,7 @@ const Projects = () => {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

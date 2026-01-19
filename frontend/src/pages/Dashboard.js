@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { projectsAPI, analyticsAPI } from '../services/api';
+import { projectsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
@@ -49,14 +49,16 @@ const Dashboard = () => {
       title: 'Total Projects',
       value: stats.totalProjects,
       icon: '📁',
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-royal-500 to-royal-600',
+      glow: 'shadow-royal-500/30',
       link: '/projects'
     },
     {
       title: 'Total Subscribers',
       value: stats.totalSubscribers.toLocaleString(),
       icon: '👥',
-      color: 'from-green-500 to-green-600',
+      color: 'from-emerald-500 to-emerald-600',
+      glow: 'shadow-emerald-500/30',
       link: '/projects'
     },
     {
@@ -64,13 +66,15 @@ const Dashboard = () => {
       value: stats.totalSent.toLocaleString(),
       icon: '📨',
       color: 'from-purple-500 to-purple-600',
+      glow: 'shadow-purple-500/30',
       link: '/notifications'
     },
     {
       title: 'Total Campaigns',
       value: stats.totalNotifications,
       icon: '📊',
-      color: 'from-royal-500 to-royal-600',
+      color: 'from-royal-400 to-royal-500',
+      glow: 'shadow-royal-400/30',
       link: '/notifications'
     }
   ];
@@ -78,7 +82,11 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-royal-600"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-dark-700 border-t-royal-500 rounded-full"
+        />
       </div>
     );
   }
@@ -89,13 +97,19 @@ const Dashboard = () => {
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold text-gray-900"
+          transition={{ duration: 0.5 }}
+          className="text-4xl font-bold gradient-text"
         >
           Dashboard
         </motion.h1>
-        <Link to="/projects" className="btn-primary">
-          + New Project
-        </Link>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Link to="/projects" className="btn-primary">
+            + New Project
+          </Link>
+        </motion.div>
       </div>
 
       {/* Stats Grid */}
@@ -103,19 +117,42 @@ const Dashboard = () => {
         {statCards.map((stat, index) => (
           <motion.div
             key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="card group cursor-pointer hover:scale-105"
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+              delay: index * 0.1,
+              type: "spring",
+              stiffness: 100
+            }}
+            whileHover={{ 
+              scale: 1.05,
+              y: -5,
+              transition: { duration: 0.2 }
+            }}
+            className="card group cursor-pointer relative overflow-hidden"
           >
-            <Link to={stat.link} className="block">
+            <motion.div
+              className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+            />
+            <Link to={stat.link} className="block relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center text-2xl shadow-lg`}>
+                <motion.div
+                  whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                  transition={{ duration: 0.5 }}
+                  className={`w-14 h-14 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-2xl shadow-lg ${stat.glow} animate-glow-pulse`}
+                >
                   {stat.icon}
-                </div>
+                </motion.div>
               </div>
-              <h3 className="text-gray-600 text-sm font-medium mb-1">{stat.title}</h3>
-              <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+              <h3 className="text-gray-400 text-sm font-medium mb-2 group-hover:text-gray-300 transition-colors">{stat.title}</h3>
+              <motion.p 
+                className="text-4xl font-bold gradient-text"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: index * 0.1 + 0.3, type: "spring" }}
+              >
+                {stat.value}
+              </motion.p>
             </Link>
           </motion.div>
         ))}
@@ -123,53 +160,75 @@ const Dashboard = () => {
 
       {/* Recent Projects */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.4, type: "spring" }}
         className="card"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Recent Projects</h2>
-          <Link to="/projects" className="text-royal-600 hover:text-royal-700 font-medium">
-            View All →
-          </Link>
+          <h2 className="text-2xl font-bold text-gray-200">Recent Projects</h2>
+          <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.95 }}>
+            <Link to="/projects" className="text-royal-400 hover:text-royal-300 font-medium flex items-center gap-2 transition-colors">
+              View All <span>→</span>
+            </Link>
+          </motion.div>
         </div>
 
         {projects.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📁</div>
-            <p className="text-gray-600 mb-4">No projects yet</p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-12"
+          >
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-6xl mb-4"
+            >
+              📁
+            </motion.div>
+            <p className="text-gray-400 mb-4">No projects yet</p>
             <Link to="/projects/new" className="btn-primary inline-block">
               Create Your First Project
             </Link>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {projects.slice(0, 5).map((project, index) => (
               <motion.div
                 key={project._id}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + index * 0.1 }}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                transition={{ 
+                  delay: 0.5 + index * 0.1,
+                  type: "spring",
+                  stiffness: 100
+                }}
+                whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                className="flex items-center justify-between p-4 bg-dark-800/50 rounded-xl hover:bg-dark-800 border border-dark-700/50 hover:border-royal-500/30 transition-all group"
               >
                 <Link to={`/projects/${project._id}`} className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                  <p className="text-sm text-gray-600">{project.domain}</p>
+                  <h3 className="font-semibold text-gray-200 group-hover:text-royal-400 transition-colors">{project.name}</h3>
+                  <p className="text-sm text-gray-400">{project.domain}</p>
                 </Link>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-gray-200">
                       {project.subscribers?.length || 0}
                     </p>
                     <p className="text-xs text-gray-500">Subscribers</p>
                   </div>
-                  <Link
-                    to={`/projects/${project._id}`}
-                    className="text-royal-600 hover:text-royal-700"
+                  <motion.div
+                    whileHover={{ x: 5 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    →
-                  </Link>
+                    <Link
+                      to={`/projects/${project._id}`}
+                      className="text-royal-400 hover:text-royal-300 text-xl font-bold"
+                    >
+                      →
+                    </Link>
+                  </motion.div>
                 </div>
               </motion.div>
             ))}

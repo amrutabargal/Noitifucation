@@ -23,6 +23,26 @@ export const AuthProvider = ({ children }) => {
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+  const fetchUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const response = await axios.get(`${API_URL}/auth/me`);
+      setUser(response.data);
+    } catch (error) {
+      localStorage.removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
@@ -60,26 +80,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchUser = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const response = await axios.get(`${API_URL}/auth/me`);
-      setUser(response.data);
-    } catch (error) {
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const login = () => {
     // Google OAuth login
@@ -93,29 +95,50 @@ export const AuthProvider = ({ children }) => {
         password
       });
 
-      localStorage.setItem('token', response.data.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      await fetchUser();
-      return { success: true, user: response.data.user };
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        await fetchUser();
+        return { success: true, user: response.data.user || response.data };
+      } else {
+        return { success: false, error: 'Invalid response from server' };
+      }
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Login failed' };
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Login failed';
+      return { success: false, error: errorMessage };
     }
   };
 
   const registerWithEmail = async (name, email, password) => {
     try {
+      // Validate inputs
+      if (!name || !name.trim()) {
+        return { success: false, error: 'Name is required' };
+      }
+      if (!email || !email.trim()) {
+        return { success: false, error: 'Email is required' };
+      }
+      if (!password || password.length < 6) {
+        return { success: false, error: 'Password must be at least 6 characters' };
+      }
+
       const response = await axios.post(`${API_URL}/auth/register`, {
-        name,
-        email,
+        name: name.trim(),
+        email: email.trim(),
         password
       });
 
-      localStorage.setItem('token', response.data.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      await fetchUser();
-      return { success: true, user: response.data.user };
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        await fetchUser();
+        return { success: true, user: response.data.user || response.data };
+      } else {
+        return { success: false, error: 'Invalid response from server' };
+      }
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Registration failed' };
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed';
+      return { success: false, error: errorMessage };
     }
   };
 

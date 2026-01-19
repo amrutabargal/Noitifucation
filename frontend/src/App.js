@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -18,7 +19,11 @@ const PrivateRoute = ({ children }) => {
   if (loading) {
     return (
       <div className="loading-spinner">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-royal-600"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-dark-700 border-t-royal-500 rounded-full"
+        />
       </div>
     );
   }
@@ -30,7 +35,28 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#1f2937',
+              color: '#e5e7eb',
+              border: '1px solid rgba(0, 86, 230, 0.3)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#e5e7eb',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#e5e7eb',
+              },
+            },
+          }}
+        />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<Login />} />

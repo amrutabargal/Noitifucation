@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import axios from 'axios';
 
 const Login = () => {
-  const { login: googleLogin, user } = useAuth();
+  const { login: googleLogin, user, loginWithEmail, registerWithEmail, fetchUser } = useAuth();
   const [isEmailLogin, setIsEmailLogin] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -22,17 +21,44 @@ const Login = () => {
     }
   }, [user]);
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
       if (isRegister) {
-        // Register
-        if (formData.password !== formData.confirmPassword) {
-          toast.error('Passwords do not match');
+        // Register validation
+        if (!formData.name.trim()) {
+          toast.error('Please enter your full name');
+          setLoading(false);
+          return;
+        }
+
+        if (formData.name.trim().length < 2) {
+          toast.error('Name must be at least 2 characters');
+          setLoading(false);
+          return;
+        }
+
+        if (!formData.email.trim()) {
+          toast.error('Please enter your email');
+          setLoading(false);
+          return;
+        }
+
+        if (!validateEmail(formData.email.trim())) {
+          toast.error('Please enter a valid email address');
+          setLoading(false);
+          return;
+        }
+
+        if (!formData.password) {
+          toast.error('Please enter a password');
           setLoading(false);
           return;
         }
@@ -43,42 +69,122 @@ const Login = () => {
           return;
         }
 
-        const response = await axios.post(`${API_URL}/auth/register`, {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password
-        });
+        if (formData.password !== formData.confirmPassword) {
+          toast.error('Passwords do not match');
+          setLoading(false);
+          return;
+        }
 
-        localStorage.setItem('token', response.data.token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-        toast.success('Registration successful!');
-        window.location.href = '/';
+        const result = await registerWithEmail(
+          formData.name.trim(),
+          formData.email.trim(),
+          formData.password
+        );
+
+        if (result.success) {
+          toast.success('Registration successful! Welcome!');
+          // Reset form
+          setFormData({
+            name: '',
+            email: '',
+            password: '',
+            confirmPassword: ''
+          });
+          setIsRegister(false);
+          // Small delay to show success message, then redirect
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+        } else {
+          toast.error(result.error || 'Registration failed');
+          setLoading(false);
+        }
       } else {
-        // Login
-        const response = await axios.post(`${API_URL}/auth/login`, {
-          email: formData.email,
-          password: formData.password
-        });
+        // Login validation
+        if (!formData.email.trim()) {
+          toast.error('Please enter your email');
+          setLoading(false);
+          return;
+        }
 
-        localStorage.setItem('token', response.data.token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-        toast.success('Login successful!');
-        window.location.href = '/';
+        if (!validateEmail(formData.email.trim())) {
+          toast.error('Please enter a valid email address');
+          setLoading(false);
+          return;
+        }
+
+        if (!formData.password) {
+          toast.error('Please enter your password');
+          setLoading(false);
+          return;
+        }
+
+        const result = await loginWithEmail(
+          formData.email.trim(),
+          formData.password
+        );
+
+        if (result.success) {
+          toast.success('Login successful! Welcome back!');
+          // Reset form
+          setFormData({
+            name: '',
+            email: '',
+            password: '',
+            confirmPassword: ''
+          });
+          // Small delay to show success message, then redirect
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+        } else {
+          toast.error(result.error || 'Login failed');
+          setLoading(false);
+        }
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Authentication failed');
-    } finally {
+      toast.error(error.response?.data?.error || error.message || 'Authentication failed');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-royal-600 via-royal-700 to-royal-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-dark-950 via-dark-900 to-dark-800 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 90, 0],
+            opacity: [0.1, 0.2, 0.1]
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute top-20 left-20 w-96 h-96 bg-royal-500 rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [90, 0, 90],
+            opacity: [0.15, 0.25, 0.15]
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          className="absolute bottom-20 right-20 w-96 h-96 bg-royal-600 rounded-full blur-3xl"
+        />
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 max-w-md w-full"
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.6, type: "spring" }}
+        className="glass rounded-3xl shadow-2xl p-8 md:p-12 max-w-md w-full relative z-10 border border-dark-700/50"
       >
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -86,9 +192,20 @@ const Login = () => {
           transition={{ delay: 0.2 }}
           className="text-center mb-8"
         >
-          <div className="inline-block p-4 bg-royal-100 rounded-full mb-4">
+          <motion.div
+            animate={{
+              y: [0, -10, 0],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="inline-block p-4 bg-gradient-to-br from-royal-500/20 to-royal-600/20 rounded-2xl mb-4 backdrop-blur-sm border border-royal-500/30"
+          >
             <svg
-              className="w-16 h-16 text-royal-600"
+              className="w-16 h-16 text-royal-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -100,37 +217,51 @@ const Login = () => {
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
               />
             </svg>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-4xl font-bold gradient-text mb-2"
+          >
             PushNotify
-          </h1>
-          <p className="text-gray-600">
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-gray-400"
+          >
             Premium Web Push Notification Platform
-          </p>
+          </motion.p>
         </motion.div>
 
         {/* Toggle Buttons */}
-        <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-lg">
-          <button
+        <div className="flex gap-2 mb-6 bg-dark-800/50 p-1 rounded-xl border border-dark-700/50">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setIsEmailLogin(false)}
-            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
               !isEmailLogin
-                ? 'bg-white text-royal-600 shadow-md'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
+                : 'text-gray-400 hover:text-gray-300'
             }`}
           >
             Google Login
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setIsEmailLogin(true)}
-            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
               isEmailLogin
-                ? 'bg-white text-royal-600 shadow-md'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
+                : 'text-gray-400 hover:text-gray-300'
             }`}
           >
             Email Login
-          </button>
+          </motion.button>
         </div>
 
         <AnimatePresence mode="wait">
@@ -142,7 +273,9 @@ const Login = () => {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
                   // Check if Google OAuth is configured
@@ -154,7 +287,7 @@ const Login = () => {
                       toast.error('Google OAuth is not configured. Please use Email Login or configure Google OAuth in backend/.env');
                     });
                 }}
-                className="w-full bg-white border-2 border-gray-300 text-gray-700 font-semibold py-4 px-6 rounded-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                className="w-full bg-dark-800/50 border-2 border-dark-700 text-gray-200 font-semibold py-4 px-6 rounded-xl hover:bg-dark-800 hover:border-royal-500/50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
               >
                 <svg className="w-6 h-6" viewBox="0 0 24 24">
                   <path
@@ -175,7 +308,7 @@ const Login = () => {
                   />
                 </svg>
                 Continue with Google
-              </button>
+              </motion.button>
             </motion.div>
           ) : (
             <motion.div
@@ -185,33 +318,37 @@ const Login = () => {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="flex gap-2 mb-4">
-                <button
+              <div className="flex gap-2 mb-4 bg-dark-800/50 p-1 rounded-xl border border-dark-700/50">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setIsRegister(false)}
-                  className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                     !isRegister
-                      ? 'bg-royal-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
+                      : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
                   Login
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setIsRegister(true)}
-                  className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
                     isRegister
-                      ? 'bg-royal-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-gradient-to-r from-royal-600 to-royal-700 text-white shadow-lg shadow-royal-500/30'
+                      : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
                   Register
-                </button>
+                </motion.button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {isRegister && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Full Name
                     </label>
                     <input
@@ -226,7 +363,7 @@ const Login = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Email
                   </label>
                   <input
@@ -240,7 +377,7 @@ const Login = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Password
                   </label>
                   <input
@@ -256,7 +393,7 @@ const Login = () => {
 
                 {isRegister && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Confirm Password
                     </label>
                     <input
@@ -271,13 +408,24 @@ const Login = () => {
                   </div>
                 )}
 
-                <button
+                <motion.button
                   type="submit"
                   disabled={loading}
+                  whileHover={{ scale: loading ? 1 : 1.02 }}
+                  whileTap={{ scale: loading ? 1 : 0.98 }}
                   className="w-full btn-primary"
                 >
-                  {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Login'}
-                </button>
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                      />
+                      Please wait...
+                    </span>
+                  ) : isRegister ? 'Create Account' : 'Login'}
+                </motion.button>
               </form>
             </motion.div>
           )}
@@ -293,9 +441,14 @@ const Login = () => {
         </motion.p>
       </motion.div>
 
-      <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm opacity-75">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+        className="absolute bottom-4 left-0 right-0 text-center text-gray-400 text-sm z-10"
+      >
         <p>© 2024 PushNotify. All rights reserved.</p>
-      </div>
+      </motion.div>
     </div>
   );
 };
