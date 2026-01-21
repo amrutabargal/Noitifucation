@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
 
       if (tokenFromUrl) {
         localStorage.setItem('token', tokenFromUrl);
-        window.history.replaceState({}, document.title, '/');
+        window.history.replaceState({}, document.title, '/dashboard');
         await fetchUser();
       } else if (token) {
         await fetchUser();

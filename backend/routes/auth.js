@@ -306,6 +306,45 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Forgot Password
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if user exists for security
+      return res.json({ 
+        message: 'If an account exists with this email, a password reset link has been sent.' 
+      });
+    }
+
+    // In production, you would:
+    // 1. Generate a reset token
+    // 2. Save it to the database with expiration
+    // 3. Send email with reset link
+    // For now, we'll just return success message
+    
+    // TODO: Implement email sending service
+    // const resetToken = crypto.randomBytes(32).toString('hex');
+    // user.resetPasswordToken = resetToken;
+    // user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    // await user.save();
+    // await sendPasswordResetEmail(user.email, resetToken);
+
+    res.json({ 
+      message: 'If an account exists with this email, a password reset link has been sent.' 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Logout
 router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
