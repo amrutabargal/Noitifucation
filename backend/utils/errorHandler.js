@@ -10,7 +10,12 @@ const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key error
   if (err.code === 11000) {
-    return res.status(400).json({ error: 'Duplicate entry', field: Object.keys(err.keyPattern)[0] });
+    const field = Object.keys(err.keyPattern || {})[0] || 'field';
+    console.error(`[ERROR HANDLER] Duplicate key error on field: ${field}`, err.keyValue);
+    if (field === 'email') {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    return res.status(400).json({ error: 'Duplicate entry', field });
   }
 
   // JWT errors

@@ -27,7 +27,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       return done(null, user);
     }
 
-    user = await User.findOne({ email: profile.emails[0].value });
+    // Normalize email: lowercase and trim whitespace
+    const normalizedEmail = profile.emails[0].value.toLowerCase().trim();
+    user = await User.findOne({ email: normalizedEmail });
     
     if (user) {
       user.googleId = profile.id;
@@ -37,9 +39,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       return done(null, user);
     }
 
+    // Create user without phone field to avoid null duplicate key errors
     user = await User.create({
       googleId: profile.id,
-      email: profile.emails[0].value,
+      email: normalizedEmail,
       name: profile.displayName,
       picture: profile.photos[0].value,
       role: 'admin'
@@ -154,22 +157,69 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
+    // Normalize email: lowercase and trim whitespace
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Debug logging
+    console.log(`[REGISTER] Attempting registration for email: ${normalizedEmail}`);
+
+    // Check if user exists - query with normalized email
+    // Since schema has lowercase: true, all emails should be stored in lowercase
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    
     if (existingUser) {
+      console.log(`[REGISTER] User already exists: ${normalizedEmail} (ID: ${existingUser._id})`);
       return res.status(400).json({ error: 'User already exists with this email' });
     }
+
+    console.log(`[REGISTER] No existing user found, proceeding with registration for: ${normalizedEmail}`);
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role: 'admin'
-    });
+    // Create user (using normalized email)
+    // Explicitly exclude phone field to avoid null duplicate key errors
+    let user;
+    try {
+      const userData = {
+        name: name.trim(),
+        email: normalizedEmail,
+        password: hashedPassword,
+        role: 'admin'
+      };
+      // Don't include phone field at all (undefined, not null)
+      user = await User.create(userData);
+    } catch (createError) {
+      // Handle duplicate key error more gracefully
+      if (createError.code === 11000) {
+        console.error(`[REGISTER] Duplicate key error for email: ${normalizedEmail}`, createError);
+        
+        // Check which field caused the duplicate key error
+        const duplicateField = createError.keyPattern ? Object.keys(createError.keyPattern)[0] : 'unknown';
+        
+        if (duplicateField === 'email') {
+          // Email duplicate - double-check
+          const raceCheckUser = await User.findOne({ email: normalizedEmail });
+          if (raceCheckUser) {
+            console.log(`[REGISTER] Race condition detected: User created between checks for email: ${normalizedEmail}`);
+            return res.status(400).json({ error: 'User already exists with this email' });
+          }
+          return res.status(400).json({ error: 'Email already registered. Please try logging in.' });
+        } else {
+          // Other duplicate key issue (like phone index from old schema)
+          console.error(`[REGISTER] Duplicate key error on field: ${duplicateField}. This might be a database index issue.`);
+          console.error(`[REGISTER] Please run: node backend/scripts/fix-phone-index.js to fix the database index.`);
+          return res.status(400).json({ error: 'Registration failed due to database configuration issue. Please contact support or run the database fix script.' });
+        }
+      }
+      throw createError; // Re-throw if it's not a duplicate key error
+    }
 
     // Generate token
     const token = jwt.sign(
@@ -189,10 +239,12 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Registration error:', error);
     if (error.code === 11000) {
-      return res.status(400).json({ error: 'Email already registered' });
+      // Final fallback for duplicate key errors
+      return res.status(400).json({ error: 'Email already registered. Please try logging in.' });
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
 
@@ -205,8 +257,11 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Find user with password
-    const user = await User.findOne({ email }).select('+password');
+    // Normalize email: lowercase and trim whitespace
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find user with password (using normalized email)
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
