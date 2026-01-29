@@ -9,6 +9,19 @@ if (token) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
+// Auth API
+export const authAPI = {
+  login: (email, password) => axios.post('/auth/login', { email, password }),
+  register: (name, email, password) => axios.post('/auth/register', { name, email, password }),
+  getMe: () => axios.get('/auth/me'),
+  logout: () => axios.post('/auth/logout'),
+  forgotPassword: (email) => axios.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => axios.post('/auth/reset-password', { token, password }),
+  googleLogin: () => {
+    window.location.href = `${API_URL}/auth/google`;
+  }
+};
+
 // Projects API
 export const projectsAPI = {
   getAll: () => axios.get('/projects'),

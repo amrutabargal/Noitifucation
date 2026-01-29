@@ -29,21 +29,9 @@ const Login = () => {
     return emailRegex.test(email);
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      // Try Google login, if fails show email form
-      try {
-        await fetch(`${API_URL}/auth/google`, { method: 'HEAD' });
-        googleLogin();
-      } catch (error) {
-        toast.error('Google login not available. Please use email/password.');
-        setShowEmailForm(true);
-      }
-    } catch (error) {
-      toast.error('Google login failed. Please use email/password.');
-      setShowEmailForm(true);
-    }
+  const handleGoogleLogin = () => {
+    // Directly redirect to Google OAuth - backend will handle errors
+    googleLogin();
   };
 
   const handleForgotPassword = async (e) => {

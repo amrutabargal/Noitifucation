@@ -20,8 +20,43 @@ const notificationSchema = new mongoose.Schema({
   image: {
     type: String
   },
+  badge: {
+    type: String // Badge image URL
+  },
+  logo: {
+    type: String // Logo image URL
+  },
+  buttons: [{
+    action: {
+      type: String, // Action URL
+      required: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    icon: String // Optional icon URL for button
+  }],
   url: {
     type: String
+  },
+  utm: {
+    type: Map,
+    of: String // UTM parameters: { utm_source, utm_medium, utm_campaign, etc. }
+  },
+  campaignId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Campaign'
+  },
+  dndMode: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    maxNotifications: {
+      type: Number,
+      default: 5 // Maximum notifications to keep per user
+    }
   },
   type: {
     type: String,
@@ -90,6 +125,16 @@ const notificationSchema = new mongoose.Schema({
   },
   sentAt: {
     type: Date
+  },
+  renewedAt: {
+    type: Date // When notification was renewed
+  },
+  originalNotificationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Notification' // Reference to original if this is a renewal
+  },
+  sourceUrl: {
+    type: String // URL from which push data was loaded
   }
 });
 

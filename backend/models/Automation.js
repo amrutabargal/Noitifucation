@@ -16,10 +16,11 @@ const automationSchema = new mongoose.Schema({
   trigger: {
     type: {
       type: String,
-      enum: ['event', 'time', 'subscriber_count', 'api'],
+      enum: ['event', 'time', 'subscriber_count', 'api', 'rss'],
       required: true
     },
     eventName: String,
+    rssFeedUrl: String, // For RSS automation
     conditions: {
       type: Map,
       of: mongoose.Schema.Types.Mixed

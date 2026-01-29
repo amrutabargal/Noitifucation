@@ -2,7 +2,9 @@ const express = require('express');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const User = require('../models/User');
+const { sendPasswordResetEmail } = require('../utils/emailService');
 const router = express.Router();
 
 // Google OAuth Strategy
@@ -10,8 +12,14 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 // Only initialize if credentials are provided
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  // Callback URL should be the backend URL (where the callback route is hosted)
+  // Default to localhost:5000 for development
   const callbackURL = process.env.GOOGLE_CALLBACK_URL || 
-    `${process.env.CLIENT_URL || 'http://localhost:5000'}/api/auth/google/callback`;
+    `http://localhost:5000/api/auth/google/callback`;
+  
+  console.log('✅ Google OAuth configured');
+  console.log(`   Client ID: ${process.env.GOOGLE_CLIENT_ID.substring(0, 20)}...`);
+  console.log(`   Callback URL: ${callbackURL}`);
   
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -72,11 +80,23 @@ passport.deserializeUser(async (id, done) => {
 
 // Google OAuth routes
 router.get('/google', (req, res, next) => {
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  // Debug: Check environment variables
+  const hasClientId = !!process.env.GOOGLE_CLIENT_ID;
+  const hasClientSecret = !!process.env.GOOGLE_CLIENT_SECRET;
+  
+  if (!hasClientId || !hasClientSecret) {
+    console.error('❌ Google OAuth not configured:');
+    console.error(`   GOOGLE_CLIENT_ID: ${hasClientId ? '✅ Set' : '❌ Missing'}`);
+    console.error(`   GOOGLE_CLIENT_SECRET: ${hasClientSecret ? '✅ Set' : '❌ Missing'}`);
     return res.status(500).json({ 
       error: 'Google OAuth not configured',
       message: 'Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env file',
-      setupUrl: 'https://console.cloud.google.com/apis/credentials'
+      setupUrl: 'https://console.cloud.google.com/apis/credentials',
+      debug: {
+        hasClientId,
+        hasClientSecret,
+        envFile: 'backend/.env'
+      }
     });
   }
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
@@ -315,8 +335,11 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    // Normalize email
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Check if user exists
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       // Don't reveal if user exists for security
       return res.json({ 
@@ -324,23 +347,66 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
-    // In production, you would:
-    // 1. Generate a reset token
-    // 2. Save it to the database with expiration
-    // 3. Send email with reset link
-    // For now, we'll just return success message
-    
-    // TODO: Implement email sending service
-    // const resetToken = crypto.randomBytes(32).toString('hex');
-    // user.resetPasswordToken = resetToken;
-    // user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-    // await user.save();
-    // await sendPasswordResetEmail(user.email, resetToken);
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    // Send email with reset link
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+      console.log(`✅ Password reset email sent to: ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send password reset email:', emailError);
+      // Still return success to user (security best practice)
+      // But log the error for admin to see
+    }
 
     res.json({ 
       message: 'If an account exists with this email, a password reset link has been sent.' 
     });
   } catch (error) {
+    console.error('Password reset request error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() } // Token not expired
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ 
+      message: 'Password has been reset successfully. You can now login with your new password.' 
+    });
+  } catch (error) {
+    console.error('Password reset error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -33,6 +33,19 @@ const subscriberSchema = new mongoose.Schema({
   country: {
     type: String
   },
+  state: {
+    type: String // State/Province for segmentation
+  },
+  city: {
+    type: String
+  },
+  device: {
+    type: String, // mobile, desktop, tablet
+    enum: ['mobile', 'desktop', 'tablet', 'unknown']
+  },
+  website: {
+    type: String // Source website for multi-website projects
+  },
   timezone: {
     type: String
   },
@@ -53,8 +66,29 @@ const subscriberSchema = new mongoose.Schema({
   },
   lastNotificationAt: {
     type: Date
-  }
+  },
+  // DND Mode: Track notifications for this subscriber
+  notificationHistory: [{
+    notificationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Notification'
+    },
+    sentAt: Date,
+    clicked: {
+      type: Boolean,
+      default: false
+    },
+    clickedAt: Date
+  }]
 });
+
+// Indexes for faster segmentation queries
+subscriberSchema.index({ project: 1, country: 1 });
+subscriberSchema.index({ project: 1, state: 1 });
+subscriberSchema.index({ project: 1, browser: 1 });
+subscriberSchema.index({ project: 1, os: 1 });
+subscriberSchema.index({ project: 1, device: 1 });
+subscriberSchema.index({ project: 1, subscribedAt: 1 });
 
 module.exports = mongoose.model('Subscriber', subscriberSchema);
 
